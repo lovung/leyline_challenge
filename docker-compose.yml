@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fastapi_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - backend_data:/app/data # Ensure SQLite data persists
+
+  frontend:
+    build:
+      context: ./frontend
+      target: production
+      dockerfile: multistage.Dockerfile
+    container_name: nextjs_frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+
+volumes:
+  backend_data:

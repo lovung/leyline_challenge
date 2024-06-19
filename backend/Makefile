@@ -3,8 +3,7 @@ env:
 	source fastapi-env/bin/activate
 
 setup:
-	python3 -m pip install pip install fastapi[all]
-	# fastapi uvicorn sqlalchemy psycopg2-binary pydantic[dotenv] python-multipart
+	python3 -m pip install --no-cache-dir -r requirements.txt
 
 run:
-	fastapi dev main.py
+	uvicorn main:app --reload

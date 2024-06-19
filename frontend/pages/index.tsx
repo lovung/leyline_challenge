@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import axios from 'axios';
 import useWebSocket, { ReadyState, useEventSource } from 'react-use-websocket';
 import { WebSocketMessage } from '../types/WebSocketMessage';
-
+import ReactPlayer from 'react-player';
 
 
 const HomePage: React.FC = () => {
@@ -12,11 +12,11 @@ const HomePage: React.FC = () => {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [messageHistory, setMessageHistory] = useState<MessageEvent<any>[]>([]);
 
-  // WebSocket URL should match your backend WebSocket endpoint
+  // WebSocket URL should match the backend WebSocket endpoint
   const socketUrl = 'ws://localhost:8000/ws/';
 
   // Connect to WebSocket based on taskId
-  const { sendMessage, lastMessage, lastJsonMessage, readyState } = useWebSocket<WebSocketMessage>(
+  const { sendMessage, lastJsonMessage, readyState } = useWebSocket<WebSocketMessage>(
     taskId ? `${socketUrl}${taskId}` : null,
   );
 
@@ -30,16 +30,9 @@ const HomePage: React.FC = () => {
     }
   }, [lastJsonMessage]);
 
-  useEffect(() => {
-    // Handle incoming WebSocket messages
-    console.log("receive websocket message", lastMessage)
-    if (lastMessage) {
-      setMessageHistory((prev) => prev.concat(lastMessage));
-    }
-  }, [lastMessage]);
-
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
+      setProgress(null);
       setSelectedFile(event.target.files[0]);
     }
   };
@@ -80,19 +73,37 @@ const HomePage: React.FC = () => {
         Upload
       </button>
       <br></br>
-      <button
+      {/* <button
         onClick={handleClickSendMessage}
         disabled={readyState !== ReadyState.OPEN}
       >
         Click Me to send 'Hello'
-      </button>
+      </button> */}
       <span>The WebSocket is currently {connectionStatus}</span>
       {progress !== null && <p>Progress: {progress}%</p>}
-      {videoUrl && (
-        <video controls>
+      {/* {videoUrl && (
+        <video controls controlsList="nodownload">
           <source src={videoUrl} type="video/mp4" />
         </video>
-      )}
+      )} */}
+      {
+        videoUrl && (
+          <div className='player-wrapper'>
+            <ReactPlayer
+              url={videoUrl!}
+              playing
+              config={{
+                file: {
+                  attributes: {
+                    onContextMenu: (e: { preventDefault: () => any; }) => e.preventDefault()
+                  }
+                }
+              }}
+            />
+          </div>
+        )
+      }
+
       {/* {lastMessage ? <span>Last message: {lastMessage}</span> : null} */}
       <ul>
         {messageHistory.map((message, idx) => (

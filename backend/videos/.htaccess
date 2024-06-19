@@ -1,0 +1,4 @@
+RewriteEngine on
+RewriteCond %{HTTP_REFERER} !^http://localhost:8000/.*$ [NC]
+RewriteCond %{HTTP_REFERER} !^http://localhost:8000/.*$ [NC]
+RewriteRule .(mp4|mp3|avi)$ - [F]

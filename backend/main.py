@@ -27,7 +27,7 @@ app = FastAPI()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-DATABASE_URL = "sqlite:///./test.db"
+DATABASE_URL = "sqlite:///./data/task.db"
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -55,7 +55,7 @@ connected_clients: Dict[str, List[WebSocket]] = {}
 # CORS (Cross-Origin Resource Sharing) configuration
 origins = [
     "http://localhost",
-    "http://localhost:3000",  # Update with your frontend URL during development
+    "http://localhost:3000",
 ]
 
 app.add_middleware(
@@ -66,7 +66,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/videos", StaticFiles(directory="videos"), name="videos")
+app.mount("/videos", StaticFiles(directory="./videos"), name="videos")
 
 @app.post("/api/upload")
 async def upload_image(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
@@ -103,35 +103,38 @@ async def websocket_endpoint(websocket: WebSocket, task_id: str):
         logger.info(f"Client disconnected from WebSocket. Task ID: {task_id}")
         connected_clients[task_id].remove(websocket)
 
-
-# def process_image(task_id: str):
-#     run_in_threadpool(lambda: simulate(task_id))
-
 async def process_image(task_id: str):
     logger.info(f"Start {task_id}...")
     db = SessionLocal()
     task = db.query(Task).filter(Task.id == task_id).first()
+    if task.status is not TaskStatus.PENDING:
+        db.close()
+        return
+    
     task.status = TaskStatus.PROCESSING
     db.commit()
     logger.info(f"Query in DB. Task ID: {task.id}...")
 
     try:
-        for progress in range(0, 101, 10):
-            await asyncio.sleep(3)
+        for progress in range(0, 101, 5):
+            await asyncio.sleep(0.1) # set as 1.5 to simulate 30s of process
             logger.info(f"Processing {task.id}... {progress}%")
             task.progress = progress
             db.commit()
-            await notify_clients(task_id, progress, None)  # Await notify_clients here
+            # Await notify_clients here
+            await notify_clients(task_id, progress, None)
 
-        video_path = f"videos/{task_id}.mp4"
-        os.makedirs("videos", exist_ok=True)
-        with open(video_path, "wb") as f:
-            f.write(os.urandom(1024))  # Simulate video generation
+        # Output of AI model return here
+        video_path = f"http://localhost:8000/videos/template.mp4"
+        # os.makedirs("videos", exist_ok=True)
+        # Simulate video generation
+        # with open(video_path, "wb") as f:
+            # f.write(os.urandom(1024))
 
         task.status = TaskStatus.COMPLETED
         task.video_path = video_path
         db.commit()
-        await notify_clients(task_id, 100, video_path)  # Notify completion with video path
+        await notify_clients(task_id, 100, video_path)  
     finally:
         db.close()
 
